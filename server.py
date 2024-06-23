@@ -1,23 +1,27 @@
 #!/usr/bin/env python
 import hug
 from hug_middleware_cors import CORSMiddleware
-
 import subprocess
 from tempfile import NamedTemporaryFile
+import os
+
+class CORSMiddleware:
+    def process_response(self, req, resp, resource, req_succeeded):
+        resp.set_header('Access-Control-Allow-Origin', '*')
+        resp.set_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        resp.set_header('Access-Control-Allow-Headers', 'Authorization, Content-Type')
 
 api = hug.API(__name__)
-api.http.add_middleware(CORSMiddleware(api))
-
+api.http.add_middleware(CORSMiddleware())
 
 @hug.get('/', output=hug.output_format.file)
 def index():
-    return "index.htm"
-
+    return open("index.htm", 'rb')  # Asegúrate de devolver los datos como bytes
 
 @hug.get('/static/{fn}', output=hug.output_format.file)
 def static(fn):
-    return 'static/{}'.format(fn)
-
+    file_path = os.path.join('static', fn)
+    return open(file_path, 'rb')  # Asegúrate de devolver los datos como bytes
 
 @hug.post('/ocr', output=hug.output_format.file)
 def ocr(body, response, language: "The language(s) to use for OCR"="eng"):
@@ -26,9 +30,9 @@ def ocr(body, response, language: "The language(s) to use for OCR"="eng"):
 
     fn, content = list(body.items()).pop()
 
-    f_out = NamedTemporaryFile(suffix='.pdf')
+    f_out = NamedTemporaryFile(suffix='.pdf', delete=False)
 
-    with NamedTemporaryFile(suffix='.pdf', mode="wb") as f_in:
+    with NamedTemporaryFile(suffix='.pdf', mode="wb", delete=False) as f_in:
         f_in.write(content)
         f_in.flush()
 
@@ -38,6 +42,4 @@ def ocr(body, response, language: "The language(s) to use for OCR"="eng"):
 
         response.set_header('X-OCR-Exit-Code', str(code))
 
-        print(f_out.name)
-
-        return f_out
+        return f_out.name

@@ -1,4 +1,3 @@
 #!/bin/bash
-. /appenv/bin/activate
-cd /app
+echo "Starting the application..."
 exec hug -f server.py
